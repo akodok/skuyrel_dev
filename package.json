@@ -1,0 +1,26 @@
+{
+  "author": "",
+  "dependencies": {
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.5"
+  },
+  "description": "",
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.9.2"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "name": "skuyrel-back.kodoka.fr",
+  "scripts": {
+    "check": "biome check",
+    "check:fix": "biome check --fix --unsafe",
+    "db:studio": "drizzle-kit studio --port 3001"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}
