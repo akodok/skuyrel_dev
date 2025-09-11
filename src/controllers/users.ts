@@ -1,19 +1,14 @@
+// Import des modules nécessaires.
 import { eq } from "drizzle-orm";
 import { Router } from "express";
 import type { ResultSetHeader } from "mysql2";
 import { db } from "../db/index.ts";
 import { users } from "../db/schema.ts";
+import { parseId } from "../helper/parseID.ts";
 
 const router = Router();
 
-function parseId(param: string) {
-  const id = Number(param);
-  if (!Number.isFinite(id) || id <= 0) {
-    throw new Error("Invalid ID");
-  }
-  return id;
-}
-
+// Selection de tous les utilisateurs.
 router.get("/", async (_req, res) => {
   try {
     const all = await db.select().from(users);
@@ -24,6 +19,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// Selection d'un utilisateur par son ID (refUsers).
 router.get("/:id", async (req, res) => {
   try {
     const id = parseId(req.params.id);
@@ -38,6 +34,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Création d'un nouvel utilisateur.
 router.post("/", async (req, res) => {
   try {
     const payload = req.body ?? {};
@@ -91,6 +88,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Modification d'un utilisateur existant via son ID (refUsers).
 router.patch("/:id", async (req, res) => {
   try {
     const id = parseId(req.params.id);
@@ -137,7 +135,7 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-
+// Suppression d'un utilisateur via son ID (refUsers).
 router.delete("/:id", async (req, res) => {
   try {
     const id = parseId(req.params.id);
