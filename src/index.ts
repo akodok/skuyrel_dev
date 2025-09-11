@@ -6,7 +6,7 @@ app.use(express.json());
 app.use("/users", usersRouter);
 
 app.get("/", (_req, res) => {
-  res.send("👋 Hello from Express + TypeScript");
+  res.send("👋 Hello from Express + TypeScript 2");
 });
 
 app.use((_req, res) => {
