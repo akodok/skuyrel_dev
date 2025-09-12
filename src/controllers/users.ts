@@ -152,22 +152,4 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-// Suppression d'un utilisateur via son ID (refUsers).
-router.delete("/:id", async (req, res) => {
-  try {
-    const id = parseId(req.params.id);
-    const result = await db.delete(users).where(eq(users.refUsers, id));
-    const affected = (result as unknown as ResultSetHeader).affectedRows ?? 0;
-    if (affected === 0) return res.status(404).json({ error: "User not found" });
-    res.json({ ok: true });
-  } catch (err) {
-    const msg = (err as Error).message === "Invalid ID" ? "Invalid user id" : "Failed to delete user";
-    if (msg === "Invalid user id") return res.status(400).json({ error: msg });
-    console.error("[users][delete]", err);
-    res.status(500).json({ error: msg });
-  }
-});
-
-
-
 export default router;
