@@ -23,14 +23,31 @@ router.get("/", async (_req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseId(req.params.id);
-    const rows = await db.select().from(users).where(eq(users.refUsers, id));
-    if (rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const rows = await db
+        .select({
+            accreditationUsers: users.accreditationUsers,
+            archiveUsers: users.archiveUsers,
+            dateFae: users.dateFae,
+            dateNaissanceUsers: users.dateNaissanceUsers,
+            datePermisAmbulance: users.datePermisAmbulance,
+            datePermisUsers: users.datePermisUsers,
+            datePswUser: users.datePswUser,
+            dateVisiteMedicalUsers: users.dateVisiteMedicalUsers,
+            emailUsers: users.emailUsers,
+            idUsers: users.idUsers,
+            nomUsers: users.nomUsers,
+            permisB: users.permisB,
+            permisBe: users.permisBe,
+            permisC1E: users.permisC1E,
+            photoProfilUser: users.photoProfilUser,
+            prenomUsers: users.prenomUsers,
+            refUsers: users.refUsers
+        })
+        .from(users).where(eq(users.refUsers, id));
+    if (rows.length === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
     res.json(rows[0]);
   } catch (err) {
-    const msg = (err as Error).message === "Invalid ID" ? "Invalid user id" : "Failed to get user";
-    if (msg === "Invalid user id") return res.status(400).json({ error: msg });
-    console.error("[users][get]", err);
-    res.status(500).json({ error: msg });
+    res.status(500).json({ error: "Identifiant utilisateur invalide" });
   }
 });
 
@@ -150,5 +167,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: msg });
   }
 });
+
+
 
 export default router;

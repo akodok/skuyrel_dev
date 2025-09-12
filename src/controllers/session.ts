@@ -1,6 +1,6 @@
 import jwt, {type JwtPayload} from "jsonwebtoken";
-import {db} from "@db/index.ts";
-import {accesSession, session} from "@db/schema.ts";
+import {db} from "../db/index.ts";
+import {accesSession, session} from "../db/schema.ts";
 import {and, eq, ne} from "drizzle-orm";
 import {Router} from "express";
 

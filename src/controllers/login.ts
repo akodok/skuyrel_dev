@@ -24,7 +24,11 @@ router.post("/", async (req, res) => {
         const pswdUsers = sha1(payload.pswdUsers);
 
         const result = await db
-            .select()
+            .select({
+                emailUsers : users.emailUsers,
+                refUsers : users.refUsers,
+                pswdUsers : users.pswdUsers,
+            })
             .from(users)
             .where(eq(users.emailUsers, emailUsers));
 
