@@ -4,28 +4,58 @@ import {db} from "@db/index.ts";
 import {users} from "@db/schema.ts";
 import {eq} from "drizzle-orm";
 import type {ResultSetHeader} from "mysql2";
+import {myEncode} from "../utils/cryptoUtils.ts";
+import jwt, {type JwtPayload} from "jsonwebtoken";
 
-router.post('/demandeAcces', async (req, res) => {
+
+// Faire l'appel dans session.ts d'une requete qui retourne au front les accès au module.
+// Comme ça à chaque requete il faut que je check si l'utilisateur / utilisateur / rien est admin du module ou pas.
+// Donc faire l'appel des bases de données type CIS.
+router.post('/addUser', async (req, res) => {
     try {
+        // Récupération du header Authorization
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer")) {
+            return res.status(401).json({ error: "Token manquant ou invalide" });
+        }
+
+        const token = authHeader.split(" ")[1];
+
+        let decoded: JwtPayload;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+        } catch (err) {
+            return res.status(401).json({ error: "Token invalide ou expiré" });
+        }
+
+        // Ici tu récupères le refUsers du token (on avait mis dans sub au login)
+        const refUsers = decoded.sub;
+        if (!refUsers) {
+            return res.status(400).json({ error: "Utilisateur introuvable dans le token" });
+        }
+
         const payload = req.body ?? {};
 
         const required = [
             "emailUsers",
             "nomUsers",
             "prenomUsers",
-            "pswdUsers",
-            "confirmPswdUsers",
+            "idSession",
+            "statutUsers",
+            "matriculeUsers",
         ];
 
         for (const k of required) {
             if (payload[k] === undefined || payload[k] === null) {
-                return res.status(400).json({ error: `Missing field: ${k}` });
+                return res.status(400).json({ error: `Champs manquants: ${k}` });
             }
         }
 
-        if (payload.pswdUser === payload.confirmPswdUsers){
-            res.status(404).json({ ok: true });
+        const toInsert = {
+            emailUsers: String(myEncode(payload.emailUsers)),
+
         }
+        console.log(toInsert)
 
     }catch (err){
         console.error("[users][create]", err);
@@ -48,3 +78,5 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({ error: 'Suppression impossible.' });
     }
 });
+
+export default router;
