@@ -13,7 +13,7 @@ import jwt, {type JwtPayload} from "jsonwebtoken";
 // Donc faire l'appel des bases de données type CIS.
 router.post('/addUser', async (req, res) => {
     try {
-        // Récupération du header Authorization
+        // Récupération du header Authorizations
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer")) {
             return res.status(401).json({ error: "Token manquant ou invalide" });
