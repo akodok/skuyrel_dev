@@ -1,6 +1,6 @@
 import jwt, {type JwtPayload} from "jsonwebtoken";
-import {db} from "../db/index.ts";
-import {accesSession, session} from "../db/schema.ts";
+import {db} from "../dbCenter/index.ts";
+import {accesSession, session} from "../dbCenter/schema.ts";
 import {and, eq, ne} from "drizzle-orm";
 import {Router} from "express";
 
@@ -30,7 +30,8 @@ router.post("/get_session_by_id", async (req, res) => {
         }
 
         // Requête Drizzle
-        const result = await db
+         const dbDev = await db('skuyrel-dev');
+         const result = await dbDev
             .select()
             .from(accesSession)
             .innerJoin(session, eq(accesSession.idSession, session.idSession))

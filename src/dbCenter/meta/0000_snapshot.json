@@ -1,0 +1,432 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "5",
+  "dialect": "mysql",
+  "tables": {
+    "acces-modules": {
+      "name": "acces-modules",
+      "columns": {
+        "idSession": {
+          "autoincrement": false,
+          "name": "idSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idModule": {
+          "autoincrement": false,
+          "name": "idModule",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "idModule": {
+          "name": "idModule",
+          "columns": [
+            "idModule"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "acces-modules_ibfk_1": {
+          "name": "acces-modules_ibfk_1",
+          "tableFrom": "acces-modules",
+          "tableTo": "modules",
+          "columnsFrom": [
+            "idModule"
+          ],
+          "columnsTo": [
+            "idModule"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "restrict"
+        },
+        "acces-modules_ibfk_2": {
+          "name": "acces-modules_ibfk_2",
+          "tableFrom": "acces-modules",
+          "tableTo": "session",
+          "columnsFrom": [
+            "idSession"
+          ],
+          "columnsTo": [
+            "idSession"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "acces_session": {
+      "name": "acces_session",
+      "columns": {
+        "idUsers": {
+          "autoincrement": false,
+          "name": "idUsers",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idSession": {
+          "autoincrement": false,
+          "name": "idSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {
+        "idSession": {
+          "name": "idSession",
+          "columns": [
+            "idSession"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "acces_session_ibfk_1": {
+          "name": "acces_session_ibfk_1",
+          "tableFrom": "acces_session",
+          "tableTo": "session",
+          "columnsFrom": [
+            "idSession"
+          ],
+          "columnsTo": [
+            "idSession"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "acces_session_ibfk_2": {
+          "name": "acces_session_ibfk_2",
+          "tableFrom": "acces_session",
+          "tableTo": "users",
+          "columnsFrom": [
+            "idUsers"
+          ],
+          "columnsTo": [
+            "refUsers"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "bugs": {
+      "name": "bugs",
+      "columns": {
+        "idBug": {
+          "autoincrement": true,
+          "name": "idBug",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dateTimeBug": {
+          "default": "'current_timestamp()'",
+          "autoincrement": false,
+          "name": "dateTimeBug",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomBug": {
+          "autoincrement": false,
+          "name": "nomBug",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prenomBug": {
+          "autoincrement": false,
+          "name": "prenomBug",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sessionBug": {
+          "autoincrement": false,
+          "name": "sessionBug",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moduleBug": {
+          "autoincrement": false,
+          "name": "moduleBug",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detailsBug": {
+          "autoincrement": false,
+          "name": "detailsBug",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "statutBug": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "statutBug",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "annotationBug": {
+          "autoincrement": false,
+          "name": "annotationBug",
+          "type": "longtext",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "modules": {
+      "name": "modules",
+      "columns": {
+        "idModule": {
+          "autoincrement": false,
+          "name": "idModule",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "libelleModule": {
+          "autoincrement": false,
+          "name": "libelleModule",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "superAdminModule": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "superAdminModule",
+          "type": "tinyint(4)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "session": {
+      "name": "session",
+      "columns": {
+        "idSession": {
+          "autoincrement": false,
+          "name": "idSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dbSession": {
+          "autoincrement": false,
+          "name": "dbSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "libelleSession": {
+          "autoincrement": false,
+          "name": "libelleSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "typeSession": {
+          "autoincrement": false,
+          "name": "typeSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logoSession": {
+          "autoincrement": false,
+          "name": "logoSession",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "refUsers": {
+          "autoincrement": true,
+          "name": "refUsers",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idUsers": {
+          "autoincrement": false,
+          "name": "idUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pswdUsers": {
+          "autoincrement": false,
+          "name": "pswdUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomUsers": {
+          "autoincrement": false,
+          "name": "nomUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prenomUsers": {
+          "autoincrement": false,
+          "name": "prenomUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emailUsers": {
+          "autoincrement": false,
+          "name": "emailUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accreditationUsers": {
+          "autoincrement": false,
+          "name": "accreditationUsers",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dateVisiteMedicalUsers": {
+          "autoincrement": false,
+          "name": "dateVisiteMedicalUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datePermisUsers": {
+          "autoincrement": false,
+          "name": "datePermisUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datePermisAmbulance": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "datePermisAmbulance",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dateFAE": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "dateFAE",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permisB": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "permisB",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permisBE": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "permisBE",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permisC1E": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "permisC1E",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dateNaissanceUsers": {
+          "autoincrement": false,
+          "name": "dateNaissanceUsers",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datePswUser": {
+          "default": "'current_timestamp()'",
+          "autoincrement": false,
+          "name": "datePswUser",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "archiveUsers": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "archiveUsers",
+          "type": "int(11)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "photoProfilUser": {
+          "default": "'NULL'",
+          "autoincrement": false,
+          "name": "photoProfilUser",
+          "type": "longtext",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}

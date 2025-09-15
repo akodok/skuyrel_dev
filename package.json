@@ -13,6 +13,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.1",
     "drizzle-kit": "^0.31.4",
+    "typedoc": "^0.28.13",
     "typescript": "^5.9.2"
   },
   "keywords": [],
@@ -21,7 +22,11 @@
   "scripts": {
     "check": "biome check",
     "check:fix": "biome check --fix --unsafe",
-    "db:studio": "drizzle-kit studio --port 3001"
+    "drizzle:introspect:dev": "drizzle-kit introspect --config drizzle.config.ts",
+    "drizzle:introspect:v6": "drizzle-kit introspect --config drizzle.CIS1.config.ts",
+    "drizzle:studio:dev": "drizzle-kit studio --config drizzle.config.ts",
+    "drizzle:studio:v6": "drizzle-kit studio --config drizzle.CIS1.config.ts",
+    "docs": "typedoc"
   },
   "type": "module",
   "version": "1.0.0"

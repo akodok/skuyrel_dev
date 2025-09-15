@@ -2,24 +2,40 @@
 import { eq } from "drizzle-orm";
 import { Router } from "express";
 import type { ResultSetHeader } from "mysql2";
-import { db } from "../db/index.ts";
-import { users } from "../db/schema.ts";
+import { db } from "../dbCenter/index.ts";
+import { users } from "../dbCenter/schema.ts";
 import { parseId } from "../helper/parseID.ts";
 
 const router = Router();
 
-// Selection de tous les utilisateurs CENTER
+/**
+ * Route GET /users
+ *
+ * Renvoie la liste complète des utilisateurs.
+ *
+ * @returns JSON : tableau des utilisateurs
+ */
 router.get("/", async (_req, res) => {
-  try {
-    const all = await db.select().from(users);
-    res.json(all);
-  } catch (err) {
-    console.error("[users][list]", err);
-    res.status(500).json({ error: "Failed to list users" });
-  }
+    try {
+        const all = await db.select().from(users);
+        res.json(all);
+    } catch (err) {
+        console.error("[users][list]", err);
+        res.status(500).json({error: "Failed to list users"});
+    }
 });
 
-router.get('/get_by_session', async (_req, res) => {})
+// Get les utilisateurs présent dans cette session (via la vue).
+router.get('/get_by_session', async (_req, res) => {
+    try {
+        const all = await db
+            .select()
+            .from(users);
+        res.json(all);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to list users" });
+    }
+})
 
 // Selection d'un utilisateur par son ID (refUsers).
 router.get("/:id", async (req, res) => {
@@ -83,7 +99,7 @@ router.post("/", async (req, res) => {
       dateNaissanceUsers: String(payload.dateNaissanceUsers),
       datePermisAmbulance: payload.datePermisAmbulance ?? null,
       datePermisUsers: String(payload.datePermisUsers),
-      datePswUser: payload.datePswUser ?? undefined, 
+      datePswUser: payload.datePswUser ?? undefined,
       dateVisiteMedicalUsers: String(payload.dateVisiteMedicalUsers),
       emailUsers: String(payload.emailUsers),
       idUsers: String(payload.idUsers),

@@ -2,8 +2,8 @@
 
 import {eq} from "drizzle-orm";
 import { Router } from "express";
-import { db } from "../db/index.ts";
-import {users} from "../db/schema.ts";
+import { db } from "../dbCenter/index.ts";
+import {users} from "../dbCenter/schema.ts";
 import { myEncode, sha1 } from "../utils/cryptoUtils.ts";
 import jwt from "jsonwebtoken";
 
@@ -22,8 +22,8 @@ router.post("/", async (req, res) => {
 
         const emailUsers = myEncode(payload.emailUsers);
         const pswdUsers = sha1(payload.pswdUsers);
-
-        const result = await db
+        const dbDev = await db('skuyrel-dev');
+        const result = await dbDev
             .select({
                 emailUsers : users.emailUsers,
                 refUsers : users.refUsers,
