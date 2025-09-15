@@ -15,6 +15,7 @@ router.post('/addUser', async (req, res) => {
     try {
         // Récupération du header Authorizations
         const authHeader = req.headers.authorization;
+        // COMMENTAIRE: Si le header n'existe pas ou ne commence pas par "Bearer", on renvoie une erreur 401 (Unauthorized)
         if (!authHeader || !authHeader.startsWith("Bearer")) {
             return res.status(401).json({ error: "Token manquant ou invalide" });
         }
