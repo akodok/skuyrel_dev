@@ -1,17 +1,19 @@
-import router from "@controllers/users.ts";
 import {parseId} from "../helper/parseID.ts";
-import {db} from "@db/index.ts";
-import {users} from "@db/schema.ts";
+import {db} from "../db/index.ts";
+import {users} from "../db/schema.ts";
 import {eq} from "drizzle-orm";
 import type {ResultSetHeader} from "mysql2";
 import {myEncode} from "../utils/cryptoUtils.ts";
 import jwt, {type JwtPayload} from "jsonwebtoken";
+import Router from "express";
+
+const router = Router();
 
 
 // Faire l'appel dans session.ts d'une requete qui retourne au front les accès au module.
 // Comme ça à chaque requete il faut que je check si l'utilisateur / utilisateur / rien est admin du module ou pas.
 // Donc faire l'appel des bases de données type CIS.
-router.post('/addUser', async (req, res) => {
+router.post('/add_user', async (req, res) => {
     try {
         // Récupération du header Authorizations
         const authHeader = req.headers.authorization;

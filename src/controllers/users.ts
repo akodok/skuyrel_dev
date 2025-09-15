@@ -8,7 +8,7 @@ import { parseId } from "../helper/parseID.ts";
 
 const router = Router();
 
-// Selection de tous les utilisateurs.
+// Selection de tous les utilisateurs CENTER
 router.get("/", async (_req, res) => {
   try {
     const all = await db.select().from(users);
@@ -18,6 +18,8 @@ router.get("/", async (_req, res) => {
     res.status(500).json({ error: "Failed to list users" });
   }
 });
+
+router.get('/get_by_session', async (_req, res) => {})
 
 // Selection d'un utilisateur par son ID (refUsers).
 router.get("/:id", async (req, res) => {

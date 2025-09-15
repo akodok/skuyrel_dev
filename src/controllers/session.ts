@@ -6,7 +6,7 @@ import {Router} from "express";
 
 const router = Router();
 
-router.post("/getSession", async (req, res) => {
+router.post("/get_session_by_id", async (req, res) => {
     try {
         // Récupération du header Authorization
         const authHeader = req.headers.authorization;
