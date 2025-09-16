@@ -1,32 +1,19 @@
-import jwt, {type JwtPayload} from "jsonwebtoken";
 import {db} from "../dbCenter/index.ts";
 import {accesSession, session} from "../dbCenter/schema.ts";
 import {and, eq, ne} from "drizzle-orm";
 import {Router} from "express";
+import {authUtils} from "../utils/authUtils.ts";
+import {myEncode} from "../utils/cryptoUtils.ts";
 
 const router = Router();
 
 router.post("/get_session_by_id", async (req, res) => {
     try {
-        // Récupération du header Authorization
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer")) {
-            return res.status(401).json({ error: "Token manquant ou invalide" });
-        }
-
-        const token = authHeader.split(" ")[1];
-
-        let decoded: JwtPayload;
-        try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
-        } catch (err) {
-            return res.status(401).json({ error: "Token invalide ou expiré" });
-        }
-
-        // Ici tu récupères le refUsers du token (on avait mis dans sub au login)
-        const refUsers = decoded.sub;
-        if (!refUsers) {
-            return res.status(400).json({ error: "Utilisateur introuvable dans le token" });
+        // Vérification de la connexion utilisateur.
+        const refUsers = authUtils(req.headers.cookie as string || "");
+        // Gestion de la non connexion.
+        if (!Number(refUsers)){
+            return res.status(401).json({error:'Utilisateur non connecté'})
         }
 
         // Requête Drizzle
@@ -52,5 +39,38 @@ router.post("/get_session_by_id", async (req, res) => {
         return res.status(500).json({ error: "Erreur interne du serveur" });
     }
 });
+
+// Récupération des infos de la session via son ID.
+router.post("/get_info_session", async (req, res) => {
+    try {
+        // Vérification de la connexion utilisateur.
+        const refUsers = authUtils(req.headers.cookie as string || "");
+        // Gestion de la non connexion.
+        if (!Number(refUsers)){
+            return res.status(401).json({error:'Utilisateur non connecté'})
+        }
+
+        const payload = req.body ?? {};
+        if (payload.id_session === '') return res.status(401).json({error:"Aucune session connue."})
+        console.log(myEncode(payload.id_session));
+        // Requête Drizzle
+        const dbDev = await db('skuyrel-dev');
+        const result = await dbDev
+            .select()
+            .from(session)
+            .where(
+                eq(session.idSession, myEncode(payload.id_session)) // Attention: refUsers est int
+            );
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: "Aucune session." });
+        }
+
+        return res.json({ sessions: result });
+    } catch (err) {
+        console.error("Erreur getSession:", err);
+        return res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+})
 
 export default router;
