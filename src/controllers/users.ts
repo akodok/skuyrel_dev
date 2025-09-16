@@ -3,21 +3,18 @@ import { eq } from "drizzle-orm";
 import { Router } from "express";
 import type { ResultSetHeader } from "mysql2";
 import { db } from "../dbCenter/index.ts";
+import { db as dbCaserne } from "../dbCenter/index.ts";
 import { users } from "../dbCenter/schema.ts";
+import { users as usersCaserne } from "../dbCaserne/schema.ts";
 import { parseId } from "../helper/parseID.ts";
 
 const router = Router();
 
-/**
- * Route GET /users
- *
- * Renvoie la liste complète des utilisateurs.
- *
- * @returns JSON : tableau des utilisateurs
- */
+// Renvoie la liste complète des utilisateurs.
 router.get("/", async (_req, res) => {
     try {
-        const all = await db.select().from(users);
+        const dbDev = await db('skuyrel-dev');
+        const all = await dbDev.select().from(users);
         res.json(all);
     } catch (err) {
         console.error("[users][list]", err);
@@ -26,14 +23,22 @@ router.get("/", async (_req, res) => {
 });
 
 // Get les utilisateurs présent dans cette session (via la vue).
-router.get('/get_by_session', async (_req, res) => {
+router.post('/get_by_session', async (req, res) => {
+    const payload = req.body ?? {};
+
+    if (payload.id_session === '') {
+        return res.status(401).json({error: "Aucune session connectée"});
+    }
+
     try {
-        const all = await db
+        const dbDev = await dbCaserne(payload.id_session);
+        const all = await dbDev
             .select()
-            .from(users);
+            .from(usersCaserne);
         res.json(all);
     } catch (err) {
-        res.status(500).json({ error: "Failed to list users" });
+        console.log(err)
+        res.status(500).json({ error: "Problème de récupération des utilisateurs" });
     }
 })
 
@@ -41,7 +46,8 @@ router.get('/get_by_session', async (_req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseId(req.params.id);
-    const rows = await db
+      const dbDev = await db('skuyrel-dev');
+      const rows = await dbDev
         .select({
             accreditationUsers: users.accreditationUsers,
             archiveUsers: users.archiveUsers,
@@ -112,7 +118,8 @@ router.post("/", async (req, res) => {
       pswdUsers: String(payload.pswdUsers),
     } satisfies Record<string, unknown>;
 
-    const result = await db.insert(users).values(toInsert);
+    const dbDev = await db('skuyrel-dev');
+    const result = await dbDev.insert(users).values(toInsert);
 
     const insertedId = (result as unknown as ResultSetHeader).insertId;
 
@@ -157,7 +164,8 @@ router.patch("/:id", async (req, res) => {
       return res.status(400).json({ error: "No valid fields to update" });
     }
 
-    const result = await db.update(users).set(updates).where(eq(users.refUsers, id));
+    const dbDev = await db('skuyrel-dev');
+    const result = await dbDev.update(users).set(updates).where(eq(users.refUsers, id));
     const affected = (result as unknown as ResultSetHeader).affectedRows ?? 0;
     if (affected === 0) return res.status(404).json({ error: "User not found" });
 
