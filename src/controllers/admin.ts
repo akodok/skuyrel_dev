@@ -1,17 +1,20 @@
 import {db} from "../dbCenter/index.ts";
+import {db as dbCaserne} from "../dbCaserne/index.ts";
 import {users,accesSession} from "../dbCenter/schema.ts";
+import {admModuleAcces} from "../dbCaserne/schema.ts";
 import type {ResultSetHeader} from "mysql2";
 import {generatePassword, myEncode, sha1} from "../utils/cryptoUtils.ts";
 import Router from "express";
 import {authUtils} from "../utils/authUtils.ts";
-import {sql} from "drizzle-orm";
+import {eq, sql} from "drizzle-orm";
 
 const router = Router();
 
 
-// Faire l'appel dans session.ts d'une requete qui retourne au front les accès au module.
-// Comme ça à chaque requete il faut que je check si l'utilisateur / utilisateur / rien est admin du module ou pas.
-// Donc faire l'appel des bases de données type CIS.
+// Création d'un utilisateur avec envoie de mail pour le mdp temporaire.
+/**
+ * TODO: Faire l'envoie de mail quand le serveur sera UP.
+ */
 router.post('/add_user', async (req, res) => {
     try {
         // Vérification de la connexion utilisateur.
@@ -92,13 +95,68 @@ router.post('/add_user', async (req, res) => {
             // rollback déjà effectué si erreur dans la transaction
             return res.status(400).json({ error: "Échec de la création (rollback effectué)." });
         }
-
-
-        // On vient ajouter l'utilisateur.
-
     } catch (err) {
         console.error("[users][create]", err);
         res.status(500).json({error: "Demande d'accès impossible."});
+    }
+})
+
+// Modification des droits d'accès aux modules.
+router.post('/update_droit_acces',async (req, res) => {
+    // Vérification de la connexion utilisateur.
+    const refUsers = authUtils(req.headers.cookie as string || "");
+    // Gestion de la non connexion.
+    if (!Number(refUsers)) {
+        return res.status(401).json({error: 'Utilisateur non connecté'})
+    }
+
+    const payload = req.body ?? {};
+    if (payload.id_session ==='') return res.status(401).json({"error": "Aucune session connue"});
+    // Il faut faire
+    // 1- supprimer tout les accès au modules pour l'user
+    // 2- ajouter les modules ADM.
+    // 3- ajouter les modules USR.
+    const dbDev = await dbCaserne(payload.id_session);
+
+    try {
+        const deleted = await  dbDev.transaction(async (tx) => {
+            // 1- supprimer tout les accès au modules pour l'user
+            const [res] = await tx
+                .delete(admModuleAcces)
+                .where(eq(admModuleAcces.idUtilisateur, payload.id_user));
+
+            // 2- ajouter les modules ADM.
+            const listeAdm = payload.listeAdm.split('-');
+            for (let i = 0; i < listeAdm.length; i++) {
+                const [addAdm] = await tx
+                    .insert(admModuleAcces)
+                    .values({
+                        idModule: listeAdm[i],
+                        idUtilisateur: payload.id_user,
+                        superAdminModule: 2,
+                        ordreModule: 0
+                    })
+            }
+
+            // 3- ajouter les modules USR.
+            const listeUser = payload.listeUser.split('-');
+            for (let i = 0; i < listeUser.length; i++) {
+                const [addUser] = await tx
+                    .insert(admModuleAcces)
+                    .values({
+                        idModule: listeUser[i],
+                        idUtilisateur: payload.id_user,
+                        superAdminModule: 1,
+                        ordreModule: 0
+                    })
+            }
+            return { deleted: (res as any).affectedRows };
+        });
+        // Si on arrive ici : COMMIT a eu lieu
+        return res.json({ ok: true, deleted });
+    }catch (err:any){
+        console.error("Transaction rollback :", err.message);
+        return res.status(400).json({ error: "Opération annulée (rollback effectué)." });
     }
 })
 
