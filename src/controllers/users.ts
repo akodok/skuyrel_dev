@@ -52,7 +52,6 @@ router.get("/:id", async (req, res) => {
             accreditationUsers: users.accreditationUsers,
             archiveUsers: users.archiveUsers,
             dateFae: users.dateFae,
-            dateNaissanceUsers: users.dateNaissanceUsers,
             datePermisAmbulance: users.datePermisAmbulance,
             datePermisUsers: users.datePermisUsers,
             datePswUser: users.datePswUser,

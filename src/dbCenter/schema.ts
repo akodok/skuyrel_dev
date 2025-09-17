@@ -56,7 +56,6 @@ export const users = mysqlTable("users", {
   accreditationUsers: tinyint().default(0).notNull(),
   archiveUsers: int().default(0).notNull(),
   dateFae: date({ mode: "string" }).default("NULL"),
-  dateNaissanceUsers: varchar({ length: 500 }),
   datePermisAmbulance: date({ mode: "string" }).default("NULL"),
   datePermisUsers: varchar({ length: 500 }),
   datePswUser: date({ mode: "string" }).default("current_timestamp()").notNull(),

@@ -987,9 +987,7 @@ export const users = mysqlView("users", {
 	emailUsers: varchar({ length: 500 }).notNull(),
 	accreditationUsers: tinyint().notNull(),
 	dateVisiteMedicalUsers: varchar({ length: 500 }).notNull(),
-	datePermisUsers: varchar({ length: 500 }).notNull(),
-	dateNaissanceUsers: varchar({ length: 500 }).notNull(),
-	// you can use { mode: 'date' }, if you want to have Date as type for this column
+	datePermisUsers: varchar({ length: 500 }),
 	datePswUser: date({ mode: 'string' }).default('current_timestamp()').notNull(),
 	archiveUsers: int().default(0).notNull(),
 	photoProfilUser: longtext().default('NULL'),
