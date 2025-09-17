@@ -1,12 +1,14 @@
 // Import des modules nécessaires.
-import { eq } from "drizzle-orm";
+import {eq, sql} from "drizzle-orm";
 import { Router } from "express";
-import type { ResultSetHeader } from "mysql2";
 import { db } from "../dbCenter/index.ts";
 import { db as dbCaserne } from "../dbCenter/index.ts";
-import { users } from "../dbCenter/schema.ts";
+import {accesSession, users} from "../dbCenter/schema.ts";
 import { users as usersCaserne } from "../dbCaserne/schema.ts";
 import { parseId } from "../helper/parseID.ts";
+import {authUtils} from "../utils/authUtils.ts";
+import {generatePassword, myEncode, sha1} from "../utils/cryptoUtils.ts";
+import type {ResultSetHeader} from "mysql2";
 
 const router = Router();
 
@@ -51,16 +53,9 @@ router.get("/:id", async (req, res) => {
         .select({
             accreditationUsers: users.accreditationUsers,
             archiveUsers: users.archiveUsers,
-            dateFae: users.dateFae,
-            datePermisAmbulance: users.datePermisAmbulance,
-            datePermisUsers: users.datePermisUsers,
             datePswUser: users.datePswUser,
-            dateVisiteMedicalUsers: users.dateVisiteMedicalUsers,
             emailUsers: users.emailUsers,
             nomUsers: users.nomUsers,
-            permisB: users.permisB,
-            permisBe: users.permisBe,
-            permisC1E: users.permisC1E,
             photoProfilUser: users.photoProfilUser,
             prenomUsers: users.prenomUsers,
             refUsers: users.refUsers
@@ -73,107 +68,158 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Création d'un nouvel utilisateur.
-router.post("/", async (req, res) => {
-  try {
-    const payload = req.body ?? {};
 
-    const required = [
-      "accreditationUsers",
-      "dateNaissanceUsers",
-      "datePermisUsers",
-      "dateVisiteMedicalUsers",
-      "emailUsers",
-      "idUsers",
-      "nomUsers",
-      "prenomUsers",
-      "pswdUsers",
-    ];
+// Création d'un utilisateur avec envoie de mail pour le mdp temporaire.
+/**
+ * TODO: Faire l'envoie de mail quand le serveur sera UP.
+ */
+router.post('/add_user', async (req, res) => {
+    try {
+        // Vérification de la connexion utilisateur.
+        const refUsers = authUtils(req.headers.cookie as string || "");
+        // Gestion de la non connexion.
+        if (!Number(refUsers)) {
+            return res.status(401).json({error: 'Utilisateur non connecté'})
+        }
 
-    for (const k of required) {
-      if (payload[k] === undefined || payload[k] === null) {
-        return res.status(400).json({ error: `Missing field: ${k}` });
-      }
+        const payload = req.body ?? {};
+
+        const required = [
+            "emailUsers",
+            "nomUsers",
+            "prenomUsers",
+            "idSession",
+            "statutUsers",
+            "matriculeUsers",
+        ];
+
+        for (const k of required) {
+            if (payload[k] === undefined || payload[k] === null) {
+                return res.status(400).json({error: `Champs manquants: ${k}`});
+            }
+        }
+
+        // génération d'un MDP sécuriser.
+        const storeGenerate = generatePassword();
+        const storeSecure = sha1(storeGenerate);
+
+        // Mise en tableau de toutes les datas à envoyer dans la center
+        // Après Insert idSession dans acces_session dans la center.
+        // Après typeUser dans adm-statut-user dans la caserne.
+        const dbDev = await db('skuyrel-dev');
+        try {
+            const userId = await dbDev.transaction(async (tx) => {
+                // 1) Insert user
+                type NewUser = typeof users.$inferInsert;
+
+                const toInsert: NewUser = {
+                    pswdUsers: storeSecure,
+                    nomUsers: myEncode(payload.nomUsers),
+                    prenomUsers: myEncode(payload.prenomUsers),
+                    emailUsers: myEncode(payload.emailUsers),
+                };
+
+                const [resUser] = await tx
+                    .insert(users)
+                    .values(
+                        toInsert
+                    );
+
+                const insertedId = (resUser as ResultSetHeader).insertId;
+
+                // 2) Insert accès session (si ça throw -> rollback auto)
+                await tx
+                    .insert(accesSession)
+                    .values({
+                        idSession: myEncode(payload.idSession),
+                        idUsers: insertedId,
+                    });
+                // 3) insert dans l’AUTRE base du même serveur (nom qualifié)
+
+                await tx.execute(
+                    sql`INSERT INTO ${sql.raw(`\`${payload.dbSession}\`.\`adm-statut-user\``)}
+                            (\`refUser\`, \`statutUser\`, \`matriculeUser\`)
+                        VALUES (${insertedId}, ${payload.statutUsers}, ${myEncode(payload.matriculeUsers)})`
+                );
+
+                // si tout va bien -> commit auto et on retourne l'id
+                return insertedId;
+            });
+
+            return res.status(201).json({id: userId, ok: true});
+        } catch (err: any) {
+            console.error(err);
+            // rollback déjà effectué si erreur dans la transaction
+            return res.status(400).json({error: "Échec de la création (rollback effectué)."});
+        }
+    } catch (err) {
+        console.error("[users][create]", err);
+        res.status(500).json({error: "Demande d'accès impossible."});
     }
+})
 
-    const toInsert = {
-      accreditationUsers: Number(payload.accreditationUsers),
-      archiveUsers: payload.archiveUsers ?? 0,
-      dateFae: payload.dateFae ?? null,
-      dateNaissanceUsers: String(payload.dateNaissanceUsers),
-      datePermisAmbulance: payload.datePermisAmbulance ?? null,
-      datePermisUsers: String(payload.datePermisUsers),
-      datePswUser: payload.datePswUser ?? undefined,
-      dateVisiteMedicalUsers: String(payload.dateVisiteMedicalUsers),
-      emailUsers: String(payload.emailUsers),
-      idUsers: String(payload.idUsers),
-      nomUsers: String(payload.nomUsers),
-      permisB: payload.permisB ?? 0,
-      permisBe: payload.permisBe ?? 0,
-      permisC1E: payload.permisC1E ?? null,
-      photoProfilUser: payload.photoProfilUser ?? null,
-      prenomUsers: String(payload.prenomUsers),
-      pswdUsers: String(payload.pswdUsers),
-    } satisfies Record<string, unknown>;
+// Modification du compte utilisateur.
+router.post('/update_user', async (req, res) => {
+    try {
+        // Vérification de la connexion utilisateur.
+        const refUsers = authUtils(req.headers.cookie as string || "");
+        // Gestion de la non connexion.
+        if (!Number(refUsers)) {
+            return res.status(401).json({error: 'Utilisateur non connecté'})
+        }
+        const payload = req.body ?? {};
+        if (payload.id_session === '') return res.status(401).json({error: "Aucune session connue."});
 
-    const dbDev = await db('skuyrel-dev');
-    const result = await dbDev.insert(users).values(toInsert);
+        // Vérification des données obligatoires.
+        const required = [
+            "id_session",
+            "id_user",
+            "prenom_user",
+            "nom_user",
+            "mail_user",
+            "statut_user"
+        ]
+        // gestion de l'encode des données.
+        const prenomUser = myEncode(payload.prenom_user);
+        const nomUser = myEncode(payload.nom_user);
+        const mailUser = myEncode(payload.mail_user);
 
-    const insertedId = (result as unknown as ResultSetHeader).insertId;
+        for (const k of required) {
+            if (payload[k] === undefined || payload[k] === null) {
+                return res.status(400).json({error: `Missing field: ${k}`});
+            }
+        }
+        // Procèdure.
+        const dbDev = await db('skuyrel-dev');
+        try {
+            const [resUser] = await dbDev.transaction(async (tx) => {
+                return tx
+                    .update(users)
+                    .set({
+                        prenomUsers: prenomUser,
+                        nomUsers: nomUser,
+                        emailUsers: mailUser,
+                    })
+                    .where(eq(users.refUsers, payload.id_user));
+            });
 
-    return res.status(201).json({ id: insertedId, ok: true });
-  } catch (err) {
-    console.error("[users][create]", err);
-    res.status(500).json({ error: "Failed to create user" });
-  }
-});
+            if ((resUser as any).affectedRows === 1){
+                return res.json({ ok: true, updated: 1});
+            }else{
+                return res.json({ ok: true, updated: 'Aucune ligne affectée.' });
+            }
 
-// Modification d'un utilisateur existant via son ID (refUsers).
-router.patch("/:id", async (req, res) => {
-  try {
-    const id = parseId(req.params.id);
-    const body = req.body ?? {};
+        } catch (err: any) {
+            console.error(err);
+            return res.status(400).json({error: "Échec de la modification (rollback effectué)."});
+        }
 
-    const allowedKeys = new Set([
-      "accreditationUsers",
-      "archiveUsers",
-      "dateFae",
-      "dateNaissanceUsers",
-      "datePermisAmbulance",
-      "datePermisUsers",
-      "datePswUser",
-      "dateVisiteMedicalUsers",
-      "emailUsers",
-      "idUsers",
-      "nomUsers",
-      "permisB",
-      "permisBe",
-      "permisC1E",
-      "photoProfilUser",
-      "prenomUsers",
-      "pswdUsers",
-    ]);
-    const updates: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(body)) {
-      if (allowedKeys.has(k)) updates[k] = v;
+    } catch (err: any) {
+        return res.status(401).json({error: "Utilisateur non connecté."})
     }
+})
 
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "No valid fields to update" });
-    }
-
-    const dbDev = await db('skuyrel-dev');
-    const result = await dbDev.update(users).set(updates).where(eq(users.refUsers, id));
-    const affected = (result as unknown as ResultSetHeader).affectedRows ?? 0;
-    if (affected === 0) return res.status(404).json({ error: "User not found" });
-
-    res.json({ ok: true });
-  } catch (err) {
-    const msg = (err as Error).message === "Invalid ID" ? "Invalid user id" : "Failed to update user";
-    if (msg === "Invalid user id") return res.status(400).json({ error: msg });
-    console.error("[users][patch]", err);
-    res.status(500).json({ error: msg });
-  }
-});
-
+/*
+* TODO: Faire la suppression d'un compte.
+ */
 export default router;

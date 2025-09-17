@@ -2,7 +2,6 @@ import express from "express";
 import usersRouter from "./controllers/users.ts";
 import loginRouter from "./controllers/login.ts";
 import sessionRouter from "./controllers/session.ts";
-import adminRouter from "./controllers/admin.ts";
 import modulesRouter from "./controllers/modules.ts";
 
 const app = express();
@@ -10,7 +9,6 @@ app.use(express.json());
 app.use("/users", usersRouter);
 app.use("/login", loginRouter);
 app.use("/session", sessionRouter);
-app.use("/admin", adminRouter);
 app.use("/modules", modulesRouter);
 
 app.get("/", (_req, res) => {
