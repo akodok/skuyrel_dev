@@ -53,16 +53,15 @@ export const session = mysqlTable("session", {
 });
 
 export const users = mysqlTable("users", {
-  accreditationUsers: tinyint().notNull(),
+  accreditationUsers: tinyint().default(0).notNull(),
   archiveUsers: int().default(0).notNull(),
   dateFae: date({ mode: "string" }).default("NULL"),
-  dateNaissanceUsers: varchar({ length: 500 }).notNull(),
+  dateNaissanceUsers: varchar({ length: 500 }),
   datePermisAmbulance: date({ mode: "string" }).default("NULL"),
-  datePermisUsers: varchar({ length: 500 }).notNull(),
+  datePermisUsers: varchar({ length: 500 }),
   datePswUser: date({ mode: "string" }).default("current_timestamp()").notNull(),
-  dateVisiteMedicalUsers: varchar({ length: 500 }).notNull(),
+  dateVisiteMedicalUsers: varchar({ length: 500 }),
   emailUsers: varchar({ length: 500 }).notNull(),
-  idUsers: varchar({ length: 500 }).notNull(),
   nomUsers: varchar({ length: 500 }).notNull(),
   permisB: int().default(0),
   permisBe: int().default(0),
