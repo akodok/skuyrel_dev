@@ -58,7 +58,6 @@ router.get("/:id", async (req, res) => {
             datePswUser: users.datePswUser,
             dateVisiteMedicalUsers: users.dateVisiteMedicalUsers,
             emailUsers: users.emailUsers,
-            idUsers: users.idUsers,
             nomUsers: users.nomUsers,
             permisB: users.permisB,
             permisBe: users.permisBe,
