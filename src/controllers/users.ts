@@ -1,5 +1,5 @@
 // Import des modules nécessaires.
-import {eq, sql} from "drizzle-orm";
+import {and, count, eq, sql} from "drizzle-orm";
 import { Router } from "express";
 import { db } from "../dbCenter/index.ts";
 import { db as dbCaserne } from "../dbCenter/index.ts";
@@ -98,6 +98,8 @@ router.post('/add_user', async (req, res) => {
                 return res.status(400).json({error: `Champs manquants: ${k}`});
             }
         }
+        // Mise en lower email.
+        const emailLower = payload.emailUsers.toLowerCase();
 
         // génération d'un MDP sécuriser.
         const storeGenerate = generatePassword();
@@ -109,6 +111,34 @@ router.post('/add_user', async (req, res) => {
         const dbDev = await db('skuyrel-dev');
         try {
             const userId = await dbDev.transaction(async (tx) => {
+                // Check de la présence du mail en base de données CENTER.
+                const [checkMail] = await tx
+                    .select({cnt: count()})
+                    .from(users)
+                    .where(eq(users.emailUsers,myEncode(emailLower)))
+
+                // si Email déjà connu on stop la fonction.
+                if(checkMail.cnt > 0)
+                return res.status(400).json({
+                    ok: false,
+                    message: "Email déjà connu en base de données.",
+                    code: "MAIL_UTILISÉ"
+                });
+
+                // Vérification si le matricule existe déjà dans la caserne.
+                const [checkMatricule] = await tx.execute(
+                    sql`SELECT count(*) as cntMatricule
+                        FROM ${sql.raw(`\`${payload.dbSession}\`.\`adm-statut-user\``)}
+                        WHERE \`matriculeUser\` = ${myEncode(payload.matriculeUsers)}`
+                );
+                // Si le matricule est déjà connu alors on stop la fonction.
+                const cntMatricule = (checkMatricule as any)[0]?.cntMatricule ?? 0;
+                if(cntMatricule > 0) return res.status(400).json({
+                    ok: false,
+                    message: "Le matricule est déjà utilisé.",
+                    code: "MATRICULE_UTILISÉ"
+                });
+
                 // 1) Insert user
                 type NewUser = typeof users.$inferInsert;
 
@@ -116,7 +146,7 @@ router.post('/add_user', async (req, res) => {
                     pswdUsers: storeSecure,
                     nomUsers: myEncode(payload.nomUsers),
                     prenomUsers: myEncode(payload.prenomUsers),
-                    emailUsers: myEncode(payload.emailUsers),
+                    emailUsers: myEncode(emailLower),
                 };
 
                 const [resUser] = await tx
@@ -148,9 +178,13 @@ router.post('/add_user', async (req, res) => {
 
             return res.status(201).json({id: userId, ok: true});
         } catch (err: any) {
-            console.error(err);
-            // rollback déjà effectué si erreur dans la transaction
-            return res.status(400).json({error: "Échec de la création (rollback effectué)."});
+            if (!res.headersSent) {
+                return res.status(500).json({
+                    ok: false,
+                    error: err?.message ?? "Internal Server Error",
+                    code: err?.code ?? undefined,
+                });
+            }
         }
     } catch (err) {
         console.error("[users][create]", err);
@@ -220,6 +254,97 @@ router.post('/update_user', async (req, res) => {
 })
 
 /*
-* TODO: Faire la suppression d'un compte.
+* Delete user uniquement via les casernes.
+* Soit uniquement de l'accès en cas de multicomptes
+* Soit total si accèès uniquement
  */
+
+/**
+ * TODO:  à revoir car il manque des choses,
+ * il faut supprimé le pswd pour que l'user ne puisse pu se connecter.
+ * /!\/!\/!\/!\Supprimer des listes de diffusion -> update de la liste de diffusion /!\/!\/!\/!\
+ * Supprimer le statut
+ *
+ */
+router.post('/delete_user_caserne', async (req, res) => {
+    try {
+        // Vérification de la connexion utilisateur.
+        const refUsers = authUtils(req.headers.cookie as string || "");
+        // Gestion de la non connexion.
+        if (!Number(refUsers)) {
+            return res.status(401).json({error: 'Utilisateur non connecté'})
+        }
+        const payload = req.body ?? {};
+        if (payload.nom_session === '') return res.status(401).json({error: "Aucune session connue."});
+
+        // Vérification des données obligatoires.
+        const required = [
+            "id_session",
+            "nom_session",
+            "id_user"
+        ]
+
+        for (const k of required) {
+            if (payload[k] === undefined || payload[k] === null) {
+                return res.status(400).json({error: `Missing field: ${k}`});
+            }
+        }
+        // Procèdure.
+        const dbDev = await db('skuyrel-dev');
+        try {
+            // 1- On regarde si le compte à plusieurs accès.
+            const deleteUser = await dbDev.transaction(async (tx) => {
+                const [row] = await tx
+                    .select({ cnt: count() })
+                    .from(accesSession)
+                    .where(eq(accesSession.idUsers, payload.id_user));
+
+                // Si l'utilisateur à plusieurs accès alors on vient uniquement supprimer l'accès à cette session.
+                // avec le dbSession
+                const nb = Number(row?.cnt ?? 0);
+
+                if(nb > 1){
+                    // 2a) supprime seulement le lien avec CETTE session
+                    await tx
+                        .delete(accesSession)
+                        .where(
+                            and(
+                                eq(accesSession.idUsers, payload.id_user),
+                                eq(accesSession.idSession, myEncode(payload.id_session))
+                            )
+                        );
+
+                    return { mode: "Utilisateur supprimé de la session." };
+                }else{
+                    // 2b) dernière session → on peut aussi supprimer tous les liens restants
+                    const [delAll] = await tx
+                        .delete(accesSession)
+                        .where(eq(accesSession.idUsers, payload.id_user));
+
+                    const deletedLinks = (delAll as ResultSetHeader).affectedRows ?? 0;
+
+                    // (optionnel) supprimer l'utilisateur
+                    // const [delUser] = await tx.delete(users).where(eq(users.refUsers, payload.id_user));
+                    // const deletedUsers = (delUser as ResultSetHeader).affectedRows ?? 0;
+
+                    return { mode: "last-session", deletedLinks /*, deletedUsers*/ };
+                }
+
+            });
+
+            if ((deleteUser as any).affectedRows === 1){
+                return res.json({ ok: true, updated: 1});
+            }else{
+                return res.json({ ok: true, updated: 'Aucune ligne affectée.' });
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            return res.status(400).json({error: "Échec de la modification (rollback effectué)."});
+        }
+
+    } catch (err: any) {
+        return res.status(401).json({error: "Utilisateur non connecté."})
+    }
+})
 export default router;
