@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import usersRouter from "./controllers/users.ts";
 import loginRouter from "./controllers/login.ts";
 import sessionRouter from "./controllers/session.ts";
@@ -34,7 +35,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });
-function cors(arg0: { origin: string[]; credentials: boolean; }): any {
-  throw new Error("Function not implemented.");
-}
+
 
