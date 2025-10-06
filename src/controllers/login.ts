@@ -56,7 +56,7 @@ router.post("/", async (req, res) => {
         res.cookie("access_token", token, {
           httpOnly: true,
           secure: false,           // true en prod (HTTPS)
-          sameSite: "lax",
+          sameSite: "none",
           maxAge: ttl * 1000,
           path: "/",
         });
